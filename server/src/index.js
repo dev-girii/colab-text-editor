@@ -17,7 +17,19 @@ application.use((req, res, next) => {
   next()
 })
 
-application.use(cors({ origin: clientOrigin }))
+application.use(cors({
+  origin: (incomingOrigin, callback) => {
+    const allowedOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
+    const normalizedIncoming = incomingOrigin ? incomingOrigin.replace(/\/$/, '') : ''
+    const normalizedAllowed = allowedOrigin.replace(/\/$/, '')
+    if (!incomingOrigin || normalizedIncoming === normalizedAllowed) {
+      callback(null, true)
+    } else {
+      callback(new Error(`CORS blocked: ${incomingOrigin}`))
+    }
+  },
+  credentials: true
+}))
 application.use(express.json())
 application.use('/api/rooms', roomRoutes)
 application.get('/health', (req, res) => res.status(200).json({ status: 'ok' }))
