@@ -122,6 +122,19 @@ async function updateDocument(request, response, next) {
   }
 }
 
+async function deleteRoom(request, response, next) {
+  try {
+    const { roomId } = request.params
+    await roomService.deleteRoom(roomId)
+    if (request.app && typeof request.app.locals.closeConnectionsForRoom === 'function') {
+      request.app.locals.closeConnectionsForRoom(roomId)
+    }
+    response.status(204).end()
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
   listRooms,
   createRoom,
@@ -129,4 +142,5 @@ module.exports = {
   getRoomById,
   updateTitle,
   updateDocument,
+  deleteRoom,
 }

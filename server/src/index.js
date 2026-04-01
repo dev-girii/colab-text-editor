@@ -37,6 +37,43 @@ application.use(errorHandler)
 
 const httpServer = http.createServer(application)
 
+const activeRoomConnections = new Map()
+
+function registerSocketConnection(roomId, connection) {
+  const currentConnections = activeRoomConnections.get(roomId) || new Set()
+  currentConnections.add(connection)
+  activeRoomConnections.set(roomId, currentConnections)
+}
+
+function unregisterSocketConnection(roomId, connection) {
+  const currentConnections = activeRoomConnections.get(roomId)
+  if (!currentConnections) {
+    return
+  }
+  currentConnections.delete(connection)
+  if (currentConnections.size === 0) {
+    activeRoomConnections.delete(roomId)
+  }
+}
+
+function closeConnectionsForRoom(roomId) {
+  const currentConnections = activeRoomConnections.get(roomId)
+  if (!currentConnections) {
+    return 0
+  }
+  for (const connection of currentConnections) {
+    try {
+      connection.close(1000, 'Session closed by admin')
+    } catch (error) {
+      console.error(`Failed to close WS connection for room ${roomId}`, error)
+    }
+  }
+  activeRoomConnections.delete(roomId)
+  return currentConnections.size
+}
+
+application.locals.closeConnectionsForRoom = closeConnectionsForRoom
+
 const webSocketServer = new WebSocket.Server({ noServer: true })
 
 webSocketServer.on('connection', (connection, request) => {
@@ -49,10 +86,12 @@ webSocketServer.on('connection', (connection, request) => {
 
   if (documentName) {
     roomService.incrementActiveConnections(documentName)
+    registerSocketConnection(documentName, connection)
     console.log(`[WS] Connected: ${documentName} | Active: ${roomService.getActiveConnectionCount(documentName)}`)
 
     connection.on('close', () => {
       roomService.decrementActiveConnections(documentName)
+      unregisterSocketConnection(documentName, connection)
       console.log(`[WS] Disconnected: ${documentName} | Active: ${roomService.getActiveConnectionCount(documentName)}`)
     })
   }

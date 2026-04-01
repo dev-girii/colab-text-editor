@@ -8,6 +8,7 @@ roomRouter.post('/', roomController.createRoom)
 roomRouter.post('/:roomId/join', roomController.joinRoom)
 roomRouter.patch('/:roomId/title', roomController.updateTitle)
 roomRouter.patch('/:roomId/document', roomController.updateDocument)
+roomRouter.delete('/:roomId', roomController.deleteRoom)
 roomRouter.get('/:roomId', roomController.getRoomById)
 
 module.exports = roomRouter
