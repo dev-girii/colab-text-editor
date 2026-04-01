@@ -110,12 +110,21 @@ async function updateDocumentContent(roomId, content) {
   })
 }
 
+async function deleteRoom(roomId) {
+  await prisma.$transaction([
+    prisma.document.deleteMany({ where: { roomId } }),
+    prisma.room.delete({ where: { id: roomId } }),
+  ])
+  activeConnectionCountByRoomId.delete(roomId)
+}
+
 module.exports = {
   findAllRooms,
   findRoomById,
   createRoom,
   updateRoomTitle,
   updateDocumentContent,
+  deleteRoom,
   incrementActiveConnections,
   decrementActiveConnections,
   getActiveConnectionCount,
