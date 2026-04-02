@@ -29,6 +29,9 @@
         <button type="button" class="btn btn-primary" @click="copyShareLink">
           Share
         </button>
+        <button type="button" class="btn btn-danger" @click="endSession">
+          End session
+        </button>
       </div>
     </nav>
     <div class="editor-toolbar-wrap">

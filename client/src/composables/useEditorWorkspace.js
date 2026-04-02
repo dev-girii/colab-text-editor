@@ -6,31 +6,37 @@ import {
   getRoomById,
   updateDocumentTitle,
   saveDocumentContent,
+  deleteRoom,
 } from '../api/roomApi'
 
 function applyHeadingTitleFromDocumentTitle(quillInstance, titleText) {
-  if (!quillInstance) {
+  if (!quillInstance || !titleText) {
     return
   }
   const cleaned = String(titleText || '').trim()
-  const docLength = quillInstance.getLength()
-  if (docLength <= 1) {
-    quillInstance.insertText(0, `${cleaned}\n`, { header: 1 }, 'api')
+  if (cleaned === '') {
     return
   }
+
   const [firstLine] = quillInstance.getLine(0)
-  if (!firstLine) {
+  const documentEmpty = quillInstance.getLength() <= 1 || !firstLine
+
+  if (documentEmpty) {
     quillInstance.insertText(0, `${cleaned}\n`, { header: 1 }, 'api')
     return
   }
-  const lineLength = firstLine.length()
+
   const formatAtStart = quillInstance.getFormat(0, 1)
-  if (formatAtStart.header === 1) {
+  if (formatAtStart.header !== 1) {
+    return
+  }
+
+  const currentTitle = String(firstLine?.text?.() || '').trim()
+  if (currentTitle !== cleaned) {
+    const lineLength = firstLine.length()
     quillInstance.deleteText(0, lineLength, 'api')
     quillInstance.insertText(0, `${cleaned}\n`, { header: 1 }, 'api')
-    return
   }
-  quillInstance.insertText(0, `${cleaned}\n`, { header: 1 }, 'api')
 }
 
 export function useEditorWorkspace(editorHostRef) {
@@ -169,7 +175,8 @@ export function useEditorWorkspace(editorHostRef) {
     try {
       await updateDocumentTitle(roomId.value, nextTitle)
       documentTitle.value = nextTitle
-    } catch {
+    } catch (error) {
+      console.error('Failed to update room title', error)
       documentTitleDraft.value = documentTitle.value
     }
   }
@@ -187,6 +194,22 @@ export function useEditorWorkspace(editorHostRef) {
     }
   }
 
+  async function endSession() {
+    const confirmed = window.confirm(
+      'End this session and delete the room? This cannot be undone.'
+    )
+    if (!confirmed) {
+      return
+    }
+    try {
+      await deleteRoom(roomId.value)
+      router.push('/')
+    } catch (error) {
+      console.error('Failed to delete room', error)
+      window.alert('Unable to end session. Please try again later.')
+    }
+  }
+
   return {
     roomId,
     documentTitleDraft,
@@ -201,6 +224,7 @@ export function useEditorWorkspace(editorHostRef) {
     handleTitleBlur,
     goHome,
     copyShareLink,
+    endSession,
     formatRoomIdChip,
   }
 }

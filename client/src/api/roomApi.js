@@ -47,3 +47,10 @@ export async function saveDocumentContent(roomId, content) {
   )
   return response.data
 }
+
+export async function deleteRoom(roomId) {
+  const response = await httpClient.delete(
+    `/api/rooms/${encodeURIComponent(roomId)}`
+  )
+  return response.data
+}

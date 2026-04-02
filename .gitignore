@@ -12,10 +12,6 @@ node_modules/
 dist/
 build/
 
-# Prisma
-server/prisma/migrations/
-*.db
-*.db-journal
 
 # Logs
 logs/

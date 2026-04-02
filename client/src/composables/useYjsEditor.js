@@ -58,15 +58,16 @@ export function useYjsEditor({
       if (!displayName) {
         return
       }
-      const host = editorContainer.value
-      const yDocument = new Y.Doc()
-      const yText = yDocument.getText('quill')
-      const websocketUrl = import.meta.env.VITE_WS_URL
-      const websocketProvider = new WebsocketProvider(
-        websocketUrl,
-        resolvedRoomId,
-        yDocument
-      )
+      try {
+        const host = editorContainer.value
+        const yDocument = new Y.Doc()
+        const yText = yDocument.getText('quill')
+        const websocketUrl = import.meta.env.VITE_WS_URL
+        const websocketProvider = new WebsocketProvider(
+          websocketUrl,
+          resolvedRoomId,
+          yDocument
+        )
       const randomColor =
         userColors[Math.floor(Math.random() * userColors.length)]
       websocketProvider.awareness.setLocalStateField('user', {
@@ -151,6 +152,12 @@ export function useYjsEditor({
         quill.value = null
         provider.value = null
       }
+    } catch (error) {
+      console.error('[Yjs] Failed to initialize editor', error)
+      syncStatus.value = 'error'
+      connectedUsers.value = []
+      teardown = () => {}
+    }
     },
     { flush: 'post' }
   )
