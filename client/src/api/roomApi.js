@@ -1,4 +1,8 @@
 import axios from 'axios'
+import { computed, ref } from 'vue'
+
+const loadingCount = ref(0)
+export const isHttpLoading = computed(() => loadingCount.value > 0)
 
 const httpClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -6,6 +10,28 @@ const httpClient = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+httpClient.interceptors.request.use(
+  (config) => {
+    loadingCount.value += 1
+    return config
+  },
+  (error) => {
+    loadingCount.value = Math.max(0, loadingCount.value - 1)
+    return Promise.reject(error)
+  }
+)
+
+httpClient.interceptors.response.use(
+  (response) => {
+    loadingCount.value = Math.max(0, loadingCount.value - 1)
+    return response
+  },
+  (error) => {
+    loadingCount.value = Math.max(0, loadingCount.value - 1)
+    return Promise.reject(error)
+  }
+)
 
 export async function fetchAllRooms() {
   const response = await httpClient.get('/api/rooms')
