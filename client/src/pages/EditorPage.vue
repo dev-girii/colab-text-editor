@@ -36,6 +36,13 @@
         <button type="button" class="btn btn-primary" @click="copyShareLink">
           Share
         </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          @click="downloadDocument"
+        >
+          Download
+        </button>
         <button type="button" class="btn btn-danger" @click="endSession">
           End session
         </button>
@@ -92,6 +99,7 @@ const {
   handleTitleBlur,
   goHome,
   copyShareLink,
+  downloadDocument,
   formatRoomIdChip,
   setUsernameValue,
 } = useEditorWorkspace(editorHostRef)

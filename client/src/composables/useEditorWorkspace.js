@@ -179,9 +179,34 @@ export function useEditorWorkspace(editorHostRef) {
     }
   }
 
+  function downloadDocument() {
+    const instance = quill.value
+    if (!instance) {
+      window.alert('Editor is not ready yet')
+      return
+    }
+    const content = instance.root.innerHTML
+    const blob = new Blob([content], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${roomId.value || 'document'}.html`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+    window.alert('Document downloaded successfully')
+  }
+
   async function endSession() {
+    const downloadNow = window.confirm(
+      'Would you like to download the document before ending the session? Press OK to download now or Cancel to continue without downloading.'
+    )
+    if (downloadNow) {
+      downloadDocument()
+    }
     const confirmed = window.confirm(
-      'End this session and delete the room? This cannot be undone.'
+      'Are you sure you want to end this session and delete the room? This cannot be undone.'
     )
     if (!confirmed) {
       return
@@ -211,6 +236,7 @@ export function useEditorWorkspace(editorHostRef) {
     handleTitleBlur,
     goHome,
     copyShareLink,
+    downloadDocument,
     endSession,
     formatRoomIdChip,
     setUsernameValue,
