@@ -282,3 +282,99 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+@media (max-width: 1040px) {
+  .editor-nav {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .editor-nav-left,
+  .editor-nav-right {
+    width: 100%;
+  }
+
+  .editor-nav-right {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .editor-toolbar-wrap {
+    padding: 10px 14px;
+  }
+
+  .editor-quill-inner {
+    max-width: 100%;
+  }
+
+  .editor-quill-inner .ql-editor {
+    padding: 32px 24px;
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 720px) {
+  .editor-nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .editor-nav-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .editor-title-input {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .editor-room-pill {
+    width: fit-content;
+  }
+
+  .editor-nav-right {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .editor-status-inline {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .editor-toolbar-wrap {
+    padding: 10px 12px;
+    justify-content: space-between;
+  }
+
+  .editor-history-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .editor-history-actions .btn-ghost {
+    flex: 1 1 48%;
+    min-width: 0;
+  }
+
+  .editor-quill-inner .ql-editor {
+    padding: 20px 16px;
+    min-height: 240px;
+  }
+
+  .editor-statusbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .avatar-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+    margin-left: -8px;
+  }
+}
