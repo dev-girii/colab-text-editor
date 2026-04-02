@@ -1,5 +1,12 @@
 <template>
   <div class="editor-root">
+    <JoinRoomModal
+      v-if="showJoinModal"
+      :open="showJoinModal"
+      :initialRoomId="formatRoomIdChip()"
+      @close="handleJoinModalClose"
+      @joined="handleDirectJoin"
+    />
     <nav class="editor-nav">
       <div class="editor-nav-left">
         <button type="button" class="editor-back" @click="goHome">
@@ -62,12 +69,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import ActiveUserAvatars from '../components/ActiveUserAvatars.vue'
+import JoinRoomModal from '../components/JoinRoomModal.vue'
 import { useEditorWorkspace } from '../composables/useEditorWorkspace'
 import '../styles/editor.css'
 
 const editorHostRef = ref(null)
+const showJoinModal = ref(false)
 
 const {
   documentTitleDraft,
@@ -77,11 +86,33 @@ const {
   syncDotClass,
   syncStatus,
   connectedUsers,
+  needsUsername,
   undo,
   redo,
   handleTitleBlur,
   goHome,
   copyShareLink,
   formatRoomIdChip,
+  setUsernameValue,
 } = useEditorWorkspace(editorHostRef)
+
+watch(
+  needsUsername,
+  (value) => {
+    showJoinModal.value = value
+  },
+  { immediate: true }
+)
+
+function handleDirectJoin(payload) {
+  showJoinModal.value = false
+  setUsernameValue(payload.username).catch(() => {
+    showJoinModal.value = true
+  })
+}
+
+function handleJoinModalClose() {
+  showJoinModal.value = false
+  goHome()
+}
 </script>

@@ -9,42 +9,13 @@ import {
   deleteRoom,
 } from '../api/roomApi'
 
-function applyHeadingTitleFromDocumentTitle(quillInstance, titleText) {
-  if (!quillInstance || !titleText) {
-    return
-  }
-  const cleaned = String(titleText || '').trim()
-  if (cleaned === '') {
-    return
-  }
-
-  const [firstLine] = quillInstance.getLine(0)
-  const documentEmpty = quillInstance.getLength() <= 1 || !firstLine
-
-  if (documentEmpty) {
-    quillInstance.insertText(0, `${cleaned}\n`, { header: 1 }, 'api')
-    return
-  }
-
-  const formatAtStart = quillInstance.getFormat(0, 1)
-  if (formatAtStart.header !== 1) {
-    return
-  }
-
-  const currentTitle = String(firstLine?.text?.() || '').trim()
-  if (currentTitle !== cleaned) {
-    const lineLength = firstLine.length()
-    quillInstance.deleteText(0, lineLength, 'api')
-    quillInstance.insertText(0, `${cleaned}\n`, { header: 1 }, 'api')
-  }
-}
-
 export function useEditorWorkspace(editorHostRef) {
   const route = useRoute()
   const router = useRouter()
   const roomId = computed(() => String(route.params.roomId || ''))
   const username = ref('')
   const sessionReady = ref(false)
+  const needsUsername = ref(false)
   const documentTitle = ref('')
   const documentTitleDraft = ref('')
   const wordCount = ref(0)
@@ -64,7 +35,7 @@ export function useEditorWorkspace(editorHostRef) {
       fromHistory === null ||
       String(fromHistory).trim() === ''
     ) {
-      router.replace('/')
+      needsUsername.value = true
       return
     }
     username.value = String(fromHistory).trim()
@@ -77,6 +48,26 @@ export function useEditorWorkspace(editorHostRef) {
       router.replace('/')
     }
   })
+
+  async function setUsernameValue(nextUsername) {
+    const cleaned = String(nextUsername || '').trim()
+    if (cleaned === '') {
+      throw new Error('Username is required')
+    }
+    username.value = cleaned
+    needsUsername.value = false
+    try {
+      const room = await getRoomById(roomId.value)
+      documentTitle.value = room.title
+      documentTitleDraft.value = room.title
+      sessionReady.value = true
+      window.history.replaceState({ username: cleaned }, '', window.location.href)
+    } catch (error) {
+      needsUsername.value = true
+      router.replace('/')
+      throw error
+    }
+  }
 
   const { quill, provider, syncStatus, undo, redo } = useYjsEditor({
     roomId,
@@ -141,17 +132,6 @@ export function useEditorWorkspace(editorHostRef) {
     detachQuillSideEffects()
   })
 
-  watch(
-    [quill, sessionReady, documentTitle],
-    ([instance, ready, titleValue]) => {
-      if (!ready || !instance) {
-        return
-      }
-      applyHeadingTitleFromDocumentTitle(instance, titleValue)
-    },
-    { flush: 'post' }
-  )
-
   watch(syncStatus, (value) => {
     if (value === 'synced') {
       syncLabel.value = 'Synced'
@@ -186,11 +166,16 @@ export function useEditorWorkspace(editorHostRef) {
   }
 
   async function copyShareLink() {
-    const url = window.location.href
+    const roomIdentifier = roomId.value || ''
+    if (!roomIdentifier) {
+      window.alert('Room ID not available')
+      return
+    }
     try {
-      await navigator.clipboard.writeText(url)
+      await navigator.clipboard.writeText(roomIdentifier)
+      window.alert('Document ID copied to clipboard')
     } catch {
-      window.prompt('Copy link', url)
+      window.prompt('Copy document ID', roomIdentifier)
     }
   }
 
@@ -219,6 +204,8 @@ export function useEditorWorkspace(editorHostRef) {
     syncDotClass,
     syncStatus,
     connectedUsers,
+    needsUsername,
+    sessionReady,
     undo,
     redo,
     handleTitleBlur,
@@ -226,5 +213,6 @@ export function useEditorWorkspace(editorHostRef) {
     copyShareLink,
     endSession,
     formatRoomIdChip,
+    setUsernameValue,
   }
 }
