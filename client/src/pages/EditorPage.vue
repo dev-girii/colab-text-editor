@@ -100,6 +100,7 @@ const {
   goHome,
   copyShareLink,
   downloadDocument,
+  endSession,
   formatRoomIdChip,
   setUsernameValue,
 } = useEditorWorkspace(editorHostRef)
