@@ -199,11 +199,18 @@ export function useEditorWorkspace(editorHostRef) {
   }
 
   async function endSession() {
-    const downloadNow = window.confirm(
-      'Would you like to download the document before ending the session? Press OK to download now or Cancel to continue without downloading.'
+    const hasDownloaded = window.confirm(
+      'Have you downloaded the document? Press OK if you have already downloaded it, or Cancel if you need to download it first.'
     )
-    if (downloadNow) {
-      downloadDocument()
+    if (!hasDownloaded) {
+      const downloadNow = window.confirm(
+        'Would you like to download the document now?'
+      )
+      if (downloadNow) {
+        downloadDocument()
+      } else {
+        return
+      }
     }
     const confirmed = window.confirm(
       'Are you sure you want to end this session and delete the room? This cannot be undone.'
