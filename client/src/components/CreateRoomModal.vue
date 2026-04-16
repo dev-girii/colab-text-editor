@@ -13,6 +13,7 @@
             autocomplete="username"
             required
           />
+          <p v-if="usernameError" class="form-error">{{ usernameError }}</p>
         </div>
         <div>
           <label class="field-label" for="create-title">Document title</label>
@@ -23,6 +24,7 @@
             type="text"
             required
           />
+          <p v-if="titleError" class="form-error">{{ titleError }}</p>
         </div>
         <div>
           <span class="field-label">Room ID</span>
@@ -53,6 +55,7 @@
             type="password"
             autocomplete="new-password"
           />
+          <p v-if="passwordError" class="form-error">{{ passwordError }}</p>
         </div>
         <p v-if="submitError" class="form-error">{{ submitError }}</p>
         <div class="modal-actions">
@@ -76,6 +79,13 @@
 import { ref, watch } from 'vue'
 import { createRoom } from '../api/roomApi'
 import { generateRoomId } from '../utils/generateRoomId'
+import {
+  sanitizeTitle,
+  sanitizeUsername,
+  validatePassword,
+  validateTitle,
+  validateUsername,
+} from '../utils/input'
 
 const props = defineProps({
   open: {
@@ -93,12 +103,18 @@ const passwordEnabledModel = ref(false)
 const previewRoomId = ref(generateRoomId())
 const submitting = ref(false)
 const submitError = ref('')
+const usernameError = ref('')
+const titleError = ref('')
+const passwordError = ref('')
 
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
       submitError.value = ''
+      usernameError.value = ''
+      titleError.value = ''
+      passwordError.value = ''
       submitting.value = false
       previewRoomId.value = generateRoomId()
     }
@@ -116,17 +132,41 @@ function regeneratePreviewId() {
 
 async function handleSubmit() {
   submitError.value = ''
+  usernameError.value = ''
+  titleError.value = ''
+  passwordError.value = ''
   submitting.value = true
   try {
+    const cleanedUsername = sanitizeUsername(usernameModel.value)
+    const cleanedTitle = sanitizeTitle(titleModel.value)
+    const usernameValidation = validateUsername(cleanedUsername)
+    const titleValidation = validateTitle(cleanedTitle)
+    const passwordValidation = validatePassword(passwordModel.value)
+    if (!usernameValidation.valid) {
+      usernameError.value = usernameValidation.message
+      submitting.value = false
+      return
+    }
+    if (!titleValidation.valid) {
+      titleError.value = titleValidation.message
+      submitting.value = false
+      return
+    }
+    if (passwordEnabledModel.value && !passwordValidation.valid) {
+      passwordError.value = passwordValidation.message
+      submitting.value = false
+      return
+    }
     const payload = {
-      title: titleModel.value.trim(),
+      title: cleanedTitle,
+      username: cleanedUsername,
     }
     if (passwordEnabledModel.value && passwordModel.value) {
       payload.password = passwordModel.value
     }
     const room = await createRoom(payload)
     emit('created', {
-      username: usernameModel.value.trim(),
+      username: cleanedUsername,
       roomId: room.id,
     })
     usernameModel.value = ''

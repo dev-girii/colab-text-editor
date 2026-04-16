@@ -4,10 +4,12 @@ import { useYjsEditor } from './useYjsEditor'
 import { useRoomSocket } from './useRoomSocket'
 import {
   getRoomById,
+  getRevisions,
   updateDocumentTitle,
   saveDocumentContent,
   deleteRoom,
 } from '../api/roomApi'
+import { sanitizeTitle, sanitizeUsername, validateTitle, validateUsername } from '../utils/input'
 
 export function useEditorWorkspace(editorHostRef) {
   const route = useRoute()
@@ -18,10 +20,15 @@ export function useEditorWorkspace(editorHostRef) {
   const needsUsername = ref(false)
   const documentTitle = ref('')
   const documentTitleDraft = ref('')
+  const roomOwner = ref('')
+  const isRoomOwner = computed(() => roomOwner.value !== '' && roomOwner.value === username.value)
   const wordCount = ref(0)
   const autoSaveLabel = ref('Saved just now')
   const syncLabel = ref('Connecting...')
   const syncDotClass = ref('status-dot status-dot-amber')
+  const showRevisions = ref(false)
+  const revisions = ref([])
+  const revisionsError = ref('')
 
   onMounted(async () => {
     const historyState = window.history.state
@@ -38,11 +45,12 @@ export function useEditorWorkspace(editorHostRef) {
       needsUsername.value = true
       return
     }
-    username.value = String(fromHistory).trim()
+    username.value = sanitizeUsername(fromHistory)
     try {
       const room = await getRoomById(roomId.value)
       documentTitle.value = room.title
       documentTitleDraft.value = room.title
+      roomOwner.value = room.createdBy || ''
       sessionReady.value = true
     } catch {
       router.replace('/')
@@ -50,8 +58,9 @@ export function useEditorWorkspace(editorHostRef) {
   })
 
   async function setUsernameValue(nextUsername) {
-    const cleaned = String(nextUsername || '').trim()
-    if (cleaned === '') {
+    const cleaned = sanitizeUsername(nextUsername)
+    const usernameValidation = validateUsername(cleaned)
+    if (!usernameValidation.valid) {
       throw new Error('Username is required')
     }
     username.value = cleaned
@@ -60,6 +69,7 @@ export function useEditorWorkspace(editorHostRef) {
       const room = await getRoomById(roomId.value)
       documentTitle.value = room.title
       documentTitleDraft.value = room.title
+      roomOwner.value = room.createdBy || ''
       sessionReady.value = true
       window.history.replaceState({ username: cleaned }, '', window.location.href)
     } catch (error) {
@@ -147,18 +157,52 @@ export function useEditorWorkspace(editorHostRef) {
   }
 
   async function handleTitleBlur() {
-    const nextTitle = documentTitleDraft.value.trim()
-    if (nextTitle === '' || nextTitle === documentTitle.value) {
+    const cleanedTitle = sanitizeTitle(documentTitleDraft.value)
+    const titleValidation = validateTitle(cleanedTitle)
+    if (!titleValidation.valid) {
+      documentTitleDraft.value = documentTitle.value
+      return
+    }
+    if (cleanedTitle === documentTitle.value) {
       documentTitleDraft.value = documentTitle.value
       return
     }
     try {
-      await updateDocumentTitle(roomId.value, nextTitle)
-      documentTitle.value = nextTitle
+      if (!isRoomOwner.value) {
+        documentTitleDraft.value = documentTitle.value
+        return
+      }
+      const cleanedUsername = sanitizeUsername(username.value)
+      const usernameValidation = validateUsername(cleanedUsername)
+      if (!usernameValidation.valid) {
+        documentTitleDraft.value = documentTitle.value
+        return
+      }
+      await updateDocumentTitle(roomId.value, cleanedTitle, cleanedUsername)
+      documentTitle.value = cleanedTitle
     } catch (error) {
       console.error('Failed to update room title', error)
       documentTitleDraft.value = documentTitle.value
     }
+  }
+
+  async function refreshRevisions() {
+    revisionsError.value = ''
+    try {
+      revisions.value = await getRevisions(roomId.value)
+    } catch {
+      revisionsError.value = 'Unable to load revisions'
+      revisions.value = []
+    }
+  }
+
+  async function openRevisions() {
+    showRevisions.value = true
+    await refreshRevisions()
+  }
+
+  function closeRevisions() {
+    showRevisions.value = false
   }
 
   function goHome() {
@@ -230,6 +274,8 @@ export function useEditorWorkspace(editorHostRef) {
   return {
     roomId,
     documentTitleDraft,
+    roomOwner,
+    isRoomOwner,
     wordCount,
     autoSaveLabel,
     syncLabel,
@@ -238,11 +284,16 @@ export function useEditorWorkspace(editorHostRef) {
     connectedUsers,
     needsUsername,
     sessionReady,
+    showRevisions,
+    revisions,
+    revisionsError,
     undo,
     redo,
     handleTitleBlur,
     goHome,
     copyShareLink,
+    openRevisions,
+    closeRevisions,
     downloadDocument,
     endSession,
     formatRoomIdChip,

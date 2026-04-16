@@ -13,6 +13,7 @@
             autocomplete="username"
             required
           />
+          <p v-if="usernameError" class="form-error">{{ usernameError }}</p>
         </div>
         <div>
           <label class="field-label" for="join-document">Document ID</label>
@@ -56,6 +57,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { joinRoom } from '../api/roomApi'
+import { sanitizeRoomId, sanitizeUsername, validateUsername } from '../utils/input'
 
 const props = defineProps({
   open: {
@@ -75,12 +77,14 @@ const documentIdModel = ref('')
 const passwordModel = ref('')
 const submitting = ref(false)
 const joinError = ref('')
+const usernameError = ref('')
 
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
       joinError.value = ''
+      usernameError.value = ''
       submitting.value = false
       documentIdModel.value = props.initialRoomId
         ? String(props.initialRoomId)
@@ -105,15 +109,23 @@ function emitClose() {
 
 async function handleSubmit() {
   joinError.value = ''
+  usernameError.value = ''
+  const cleanedUsername = sanitizeUsername(usernameModel.value)
+  const usernameValidation = validateUsername(cleanedUsername)
+  if (!usernameValidation.valid) {
+    usernameError.value = usernameValidation.message
+    return
+  }
+  usernameModel.value = cleanedUsername
   submitting.value = true
   try {
-    const roomId = documentIdModel.value.trim()
+    const roomId = sanitizeRoomId(documentIdModel.value)
     await joinRoom(roomId, {
-      username: usernameModel.value.trim(),
+      username: cleanedUsername,
       password: passwordModel.value,
     })
     emit('joined', {
-      username: usernameModel.value.trim(),
+      username: cleanedUsername,
       roomId,
     })
     usernameModel.value = ''

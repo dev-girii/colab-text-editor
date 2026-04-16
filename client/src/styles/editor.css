@@ -75,6 +75,52 @@
   white-space: nowrap;
 }
 
+.editor-owner-tag {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(127, 119, 221, 0.12);
+  border: 0.5px solid rgba(127, 119, 221, 0.35);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.revisions-empty {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: 10px 0;
+}
+
+.revisions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.revision-row {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 0.5px solid var(--color-border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.revision-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.revision-time {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
 .editor-nav-right {
   display: flex;
   align-items: center;

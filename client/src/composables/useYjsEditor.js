@@ -5,6 +5,7 @@ import Quill from 'quill'
 import QuillCursors from 'quill-cursors'
 import { ref, shallowRef, watch, onUnmounted } from 'vue'
 import { saveRevision } from '../api/roomApi'
+import { sanitizeUsername, validateUsername } from '../utils/input'
 
 Quill.register('modules/cursors', QuillCursors)
 
@@ -112,9 +113,14 @@ export function useYjsEditor({
           return
         }
         try {
+          const cleanedUsername = sanitizeUsername(displayName)
+          const usernameValidation = validateUsername(cleanedUsername)
+          if (!usernameValidation.valid) {
+            return
+          }
           await saveRevision(resolvedRoomId, {
             content: editor.root.innerHTML,
-            savedBy: displayName,
+            savedBy: cleanedUsername,
           })
         } catch {}
       }, 5 * 60 * 1000)

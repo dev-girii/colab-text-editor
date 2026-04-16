@@ -58,10 +58,10 @@ export async function getRoomById(roomId) {
   return response.data
 }
 
-export async function updateDocumentTitle(roomId, title) {
+export async function updateDocumentTitle(roomId, title, username) {
   const response = await httpClient.patch(
     `/api/rooms/${encodeURIComponent(roomId)}/title`,
-    { title }
+    { title, username }
   )
   return response.data
 }
