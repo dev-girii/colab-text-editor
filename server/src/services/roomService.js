@@ -50,6 +50,7 @@ async function findRoomById(roomId, options = {}) {
       id: true,
       title: true,
       isProtected: true,
+      createdBy: true,
       createdAt: true,
       updatedAt: true,
     },
