@@ -4,6 +4,7 @@ import { QuillBinding } from 'y-quill'
 import Quill from 'quill'
 import QuillCursors from 'quill-cursors'
 import { ref, shallowRef, watch, onUnmounted } from 'vue'
+import { saveRevision } from '../api/roomApi'
 
 Quill.register('modules/cursors', QuillCursors)
 
@@ -36,6 +37,7 @@ export function useYjsEditor({
   const syncStatus = ref('connecting')
 
   let binding = null
+  let revisionIntervalId = null
   let teardown = () => {}
 
   const stopCompositionWatch = watch(
@@ -103,6 +105,20 @@ export function useYjsEditor({
       quill.value = quillInstance
       provider.value = websocketProvider
 
+      revisionIntervalId = setInterval(async () => {
+        const editor = quill.value
+        const currentProvider = provider.value
+        if (!editor || !currentProvider) {
+          return
+        }
+        try {
+          await saveRevision(resolvedRoomId, {
+            content: editor.root.innerHTML,
+            savedBy: displayName,
+          })
+        } catch {}
+      }, 5 * 60 * 1000)
+
       const updateUsers = () => {
         const list = []
         websocketProvider.awareness.getStates().forEach((state) => {
@@ -141,6 +157,10 @@ export function useYjsEditor({
       updateUsers()
 
       teardown = () => {
+        if (revisionIntervalId !== null) {
+          clearInterval(revisionIntervalId)
+          revisionIntervalId = null
+        }
         websocketProvider.awareness.off('change', handleAwarenessChange)
         websocketProvider.off('status', handleStatus)
         websocketProvider.off('sync', handleSync)

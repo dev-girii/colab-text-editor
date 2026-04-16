@@ -74,6 +74,21 @@ export async function saveDocumentContent(roomId, content) {
   return response.data
 }
 
+export async function saveRevision(roomId, payload) {
+  const response = await httpClient.post(
+    `/api/rooms/${encodeURIComponent(roomId)}/revisions`,
+    payload
+  )
+  return response.data
+}
+
+export async function getRevisions(roomId) {
+  const response = await httpClient.get(
+    `/api/rooms/${encodeURIComponent(roomId)}/revisions`
+  )
+  return response.data
+}
+
 export async function deleteRoom(roomId) {
   const response = await httpClient.delete(
     `/api/rooms/${encodeURIComponent(roomId)}`
