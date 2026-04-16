@@ -56,7 +56,14 @@ async function findRoomById(roomId, options = {}) {
   })
 }
 
-async function createRoom({ title, password }) {
+async function findRoomCreatorById(roomId) {
+  return prisma.room.findUnique({
+    where: { id: roomId },
+    select: { id: true, createdBy: true },
+  })
+}
+
+async function createRoom({ title, password, createdBy }) {
   const roomId = generateRoomId()
   const trimmedTitle = String(title).trim()
   const passwordProvided =
@@ -68,12 +75,17 @@ async function createRoom({ title, password }) {
     ? await bcryptjs.hash(String(password), saltRounds)
     : null
   const isProtected = passwordProvided
+  const normalizedCreator =
+    createdBy !== undefined && createdBy !== null && String(createdBy).trim() !== ''
+      ? String(createdBy).trim()
+      : 'anonymous'
   return prisma.room.create({
     data: {
       id: roomId,
       title: trimmedTitle,
       passwordHash,
       isProtected,
+      createdBy: normalizedCreator,
       document: {
         create: {},
       },
@@ -112,19 +124,48 @@ async function updateDocumentContent(roomId, content) {
 
 async function deleteRoom(roomId) {
   await prisma.$transaction([
+    prisma.revision.deleteMany({ where: { roomId } }),
     prisma.document.deleteMany({ where: { roomId } }),
     prisma.room.delete({ where: { id: roomId } }),
   ])
   activeConnectionCountByRoomId.delete(roomId)
 }
 
+async function createRevision(roomId, content, savedBy) {
+  return prisma.revision.create({
+    data: {
+      roomId,
+      content: String(content),
+      savedBy: String(savedBy),
+    },
+  })
+}
+
+async function findRevisionsByRoomId(roomId) {
+  return prisma.revision.findMany({
+    where: { roomId },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: {
+      id: true,
+      roomId: true,
+      content: true,
+      savedBy: true,
+      createdAt: true,
+    },
+  })
+}
+
 module.exports = {
   findAllRooms,
   findRoomById,
+  findRoomCreatorById,
   createRoom,
   updateRoomTitle,
   updateDocumentContent,
   deleteRoom,
+  createRevision,
+  findRevisionsByRoomId,
   incrementActiveConnections,
   decrementActiveConnections,
   getActiveConnectionCount,
